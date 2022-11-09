@@ -176,13 +176,21 @@ func (r *ZRanking) GetUserRank(ctx context.Context, uid int64, desc bool) (int64
 	if desc {
 		zrank = r.Redis.ZRevRank
 	}
-	return zrank(ctx, r.Key, fmt.Sprint(uid)).Result()
+	rank, err := zrank(ctx, r.Key, fmt.Sprint(uid)).Result()
+	if errors.Is(err, redis.Nil) {
+		return -1, nil
+	}
+	return rank, err
+
 }
 
 // GetUserVal 获取某个用户score中的排序值
 func (r *ZRanking) GetUserVal(ctx context.Context, uid int64) (int64, error) {
 	score, err := r.Redis.ZScore(ctx, r.Key, fmt.Sprint(uid)).Result()
 	if err != nil {
+		if errors.Is(err, redis.Nil) {
+			return 0, nil
+		}
 		return 0, err
 	}
 	return r.score2val(ctx, score)
