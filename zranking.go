@@ -13,7 +13,7 @@ import (
 )
 
 // ZRanking 排行榜：
-// 使用redis zset，得分相同时，按时间先后进行排序；
+// 使用redis zset，得分相同时，按时间先后进行排序，用户排行名次Rank从1开始；
 // 将zset score按十进制数拆分，score十进制数字总共固定为16位（超过16位的数会有浮点数精度导致进位的问题），
 // 整数部分用于表示用户排序值val，小数部分表示排行活动结束时间戳（秒）与用户排序值更新时间戳（秒）的差值deltaTs，
 // 小数部分的数字长度由deltaTs的数字长度确定，整数部分最大支持长度则为：16-len(deltaTs)。
@@ -29,8 +29,9 @@ type ZRanking struct {
 
 // RankMember 排行用户信息
 type RankMember struct {
-	UID int64 // 用户id
-	Val int64 // 用户排行值
+	UID  int64 // 用户id
+	Val  int64 // 用户排行值
+	Rank int64 // 用户排名
 }
 
 // New 创建ZRanking实例
@@ -150,7 +151,7 @@ func (r *ZRanking) GetRankingList(ctx context.Context, topN int64, desc bool) ([
 		return nil, err
 	}
 	result := []RankMember{}
-	for _, z := range list {
+	for idx, z := range list {
 		val, err := r.score2val(ctx, z.Score)
 		if err != nil {
 			return nil, errors.Wrapf(err, "ZRanking GetRankingList score2val error, uid:%v score:%v", z.Member, z.Score)
@@ -161,8 +162,9 @@ func (r *ZRanking) GetRankingList(ctx context.Context, topN int64, desc bool) ([
 			return nil, errors.Wrapf(err, "ZRanking GetRankingList uid ParseInt error, uid:%v", z.Member)
 		}
 		m := RankMember{
-			UID: uid,
-			Val: val,
+			UID:  uid,
+			Val:  val,
+			Rank: int64(idx + 1),
 		}
 		result = append(result, m)
 	}
@@ -170,16 +172,16 @@ func (r *ZRanking) GetRankingList(ctx context.Context, topN int64, desc bool) ([
 }
 
 // GetUserRank 获取某个用户的排行
-// 下标从0开始
 func (r *ZRanking) GetUserRank(ctx context.Context, uid int64, desc bool) (int64, error) {
 	zrank := r.Redis.ZRank
 	if desc {
 		zrank = r.Redis.ZRevRank
 	}
-	rank, err := zrank(ctx, r.Key, fmt.Sprint(uid)).Result()
+	idx, err := zrank(ctx, r.Key, fmt.Sprint(uid)).Result()
 	if errors.Is(err, redis.Nil) {
-		return -1, nil
+		return 0, nil
 	}
+	rank := idx + 1
 	return rank, err
 
 }
