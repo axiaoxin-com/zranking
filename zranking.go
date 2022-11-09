@@ -27,6 +27,12 @@ type ZRanking struct {
 	TimePadWidth   int           // 排行榜活动结束时间与用户排序值更新时间的差值补0宽度
 }
 
+// RankMember 排行用户信息
+type RankMember struct {
+	UID int64 // 用户id
+	Val int64 // 用户排行值
+}
+
 // New 创建ZRanking实例
 func New(rds *redis.Client, key string, startTs, endTs int64, expiration time.Duration) (*ZRanking, error) {
 	deltaTs := endTs - startTs
@@ -123,7 +129,7 @@ func (r *ZRanking) score2val(ctx context.Context, score float64) (int64, error) 
 // GetRankingList 返回排行榜
 // topN <= 0 取全量
 // desc 是否按score降序排列
-func (r *ZRanking) GetRankingList(ctx context.Context, topN int64, desc bool) ([]redis.Z, error) {
+func (r *ZRanking) GetRankingList(ctx context.Context, topN int64, desc bool) ([]RankMember, error) {
 	start := int64(0)
 	stop := topN - 1
 	if topN <= 0 {
@@ -139,7 +145,28 @@ func (r *ZRanking) GetRankingList(ctx context.Context, topN int64, desc bool) ([
 	if desc {
 		zrange = r.Redis.ZRevRangeWithScores
 	}
-	return zrange(ctx, r.Key, start, stop).Result()
+	list, err := zrange(ctx, r.Key, start, stop).Result()
+	if err != nil {
+		return nil, err
+	}
+	result := []RankMember{}
+	for _, z := range list {
+		val, err := r.score2val(ctx, z.Score)
+		if err != nil {
+			return nil, errors.Wrapf(err, "ZRanking GetRankingList score2val error, uid:%v score:%v", z.Member, z.Score)
+		}
+		member := z.Member.(string)
+		uid, err := strconv.ParseInt(member, 10, 64)
+		if err != nil {
+			return nil, errors.Wrapf(err, "ZRanking GetRankingList uid ParseInt error, uid:%v", z.Member)
+		}
+		m := RankMember{
+			UID: uid,
+			Val: val,
+		}
+		result = append(result, m)
+	}
+	return result, nil
 }
 
 // GetUserRank 获取某个用户的排行

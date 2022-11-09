@@ -1,7 +1,6 @@
 package zranking
 
 import (
-	"fmt"
 	"testing"
 	"time"
 
@@ -54,15 +53,15 @@ func TestZRanking(t *testing.T) {
 	rank, err := zr.GetRankingList(ctx, 3, true)
 	require.Nil(t, err)
 	require.Len(t, rank, 3)
-	require.Equal(t, fmt.Sprint(uid-1), rank[0].Member)
-	require.Equal(t, fmt.Sprint(uid), rank[1].Member)
-	require.Equal(t, fmt.Sprint(uid+1), rank[2].Member)
+	require.Equal(t, uid-1, rank[0].UID)
+	require.Equal(t, uid, rank[1].UID)
+	require.Equal(t, uid+1, rank[2].UID)
 
 	rank, err = zr.GetRankingList(ctx, 2, true)
 	require.Nil(t, err)
 	require.Len(t, rank, 2)
-	require.Equal(t, fmt.Sprint(uid-1), rank[0].Member)
-	require.Equal(t, fmt.Sprint(uid), rank[1].Member)
+	require.Equal(t, uid-1, rank[0].UID)
+	require.Equal(t, uid, rank[1].UID)
 
 	rank, err = zr.GetRankingList(ctx, 4, true)
 	require.Nil(t, err)
@@ -75,9 +74,9 @@ func TestZRanking(t *testing.T) {
 	rank, err = zr.GetRankingList(ctx, 0, false)
 	require.Nil(t, err)
 	require.Len(t, rank, 3)
-	require.Equal(t, fmt.Sprint(uid-1), rank[2].Member)
-	require.Equal(t, fmt.Sprint(uid), rank[1].Member)
-	require.Equal(t, fmt.Sprint(uid+1), rank[0].Member)
+	require.Equal(t, uid-1, rank[2].UID)
+	require.Equal(t, uid, rank[1].UID)
+	require.Equal(t, uid+1, rank[0].UID)
 
 	ur, err := zr.GetUserRank(ctx, uid, true)
 	require.Nil(t, err)
@@ -130,9 +129,9 @@ func TestZRanking(t *testing.T) {
 	rank, err = zr.GetRankingList(ctx, 0, true)
 	require.Nil(t, err)
 	require.Len(t, rank, 3)
-	require.Equal(t, fmt.Sprint(uid-1), rank[0].Member)
-	require.Equal(t, fmt.Sprint(uid+1), rank[1].Member)
-	require.Equal(t, fmt.Sprint(uid), rank[2].Member)
+	require.Equal(t, uid-1, rank[0].UID)
+	require.Equal(t, uid+1, rank[1].UID)
+	require.Equal(t, uid, rank[2].UID)
 
 	ur, err = zr.GetUserRank(ctx, uid-1, true)
 	require.Nil(t, err)
