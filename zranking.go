@@ -115,9 +115,6 @@ func (r *ZRanking) val2score(ctx context.Context, val int64) (float64, error) {
 func (r *ZRanking) score2val(ctx context.Context, score float64) (int64, error) {
 	scoreStr := fmt.Sprint(score)
 	ss := strings.Split(scoreStr, ".")
-	if len(ss) != 2 {
-		return 0, fmt.Errorf("ZRanking score2val split score error, score: %v, ss:%v", score, ss)
-	}
 	valStr := ss[0]
 	val, err := strconv.ParseInt(valStr, 10, 64)
 	if err != nil {
@@ -183,7 +180,6 @@ func (r *ZRanking) GetUserRank(ctx context.Context, uid int64, desc bool) (int64
 	}
 	rank := idx + 1
 	return rank, err
-
 }
 
 // GetUserVal 获取某个用户score中的排序值
